@@ -1,31 +1,52 @@
 # docker run -d --name eventstoredb-insecure -it -p 2113:2113 eventstore/eventstore:21.10.9-buster-slim --insecure
 import random
 import time
+import threading
 
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
+# issue 10000000
+NUM_ROWS = [10000, 100000, 1000000, 10000000]
 
-
-client = EventStoreDBClient(
-    uri="esdb://localhost:2113?Tls=false"
-)
-
-stream_name1 = 'test-stream-1'
-
-list_time = []
-for k in range(6):
-    start = time.time()
-    for j in range(4):
-        list_events = [NewEvent(type='OrderCreated', data=b'{"order_number": "123456"}')] * 25000
+def insert_data(size):
+    numb_of_loops = size // 10000
+    for j in range(numb_of_loops+1):
+        list_events = [NewEvent(type='OrderCreated', data=b'a'*100)] * 10000
 
         commit_position1 = client.append_to_stream(
             stream_name=stream_name1,
             current_version=StreamState.ANY,
             events=list_events,
         )
-    list_time.append(time.time() - start)
-    print(f'time_{k}: {list_time[-1]}')
 
-print(f'avg: {sum(list_time)/len(list_time)}')
+if __name__ == "__main__":
+    dict_time = {}
+    client = EventStoreDBClient(
+        uri="esdb://localhost:2113?Tls=false"
+    )
+
+    stream_name1 = 'test-stream-1'
+
+    for num_row in NUM_ROWS:
+        list_time = []
+        for k in range(6):
+            thread_list = []
+            temp = num_row//5
+            for i in range(5):
+                thread_list.append(threading.Thread(target=insert_data, args=(temp, )))
+            # insert_data(10000000)
+            start = time.time()
+            for thread in thread_list:
+                thread.start()
+            for thread in thread_list:
+                thread.join()
+            list_time.append(time.time() - start)
+            print(f'time_{k}: {list_time[-1]}')
+            client.delete_stream(stream_name=stream_name1, current_version=StreamState.ANY)
+
+        avg = sum(list_time)/len(list_time)
+        dict_time[num_row] = avg
+        print(f'avg: {sum(list_time)/len(list_time)}')
+    print(dict_time)
 
 
 # DOES NOT WORK
