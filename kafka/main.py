@@ -15,7 +15,7 @@ from kafka import KafkaProducer, KafkaConsumer
 @click.option('--num_producers', default=1, type=click.INT, help='Number of producer threads to create.', required=False)
 
 def benchmark(client_type, brokers, topic, num_messages, msg_size, num_runs, num_producers):
-    payload = b"x" * msg_size
+    payload = "x" * msg_size
     avg_times = []
     message_counts = [10000,100000,1000000,10000000]
     for _ in message_counts:
@@ -41,7 +41,7 @@ def benchmark(client_type, brokers, topic, num_messages, msg_size, num_runs, num
             run_times.append(run_time_taken)
         avg_run_time = sum(run_times) / num_runs
         avg_times.append(avg_run_time)
-        print_results(f"Kafka-Python {client_type}", run_times, _, msg_size)
+        print_results(f"Kafka-Python {client_type}", run_times, num_messages, msg_size)
 
     plot_message_count_vs_time(message_counts,avg_times, num_producers)
 
@@ -66,15 +66,20 @@ def _produce(producer, topic, payload, num_messages):
     producer.flush()
 
 def _consume(brokers, topic, num_messages):
+
+    client = KafkaConsumer(topic, bootstrap_servers=brokers, group_id=str(uuid.uuid1()), auto_offset_reset="earliest")
+    client.subscribe([topic])
     num_messages_consumed = 0
-    for msg in brokers:
+    for msg in client:
         num_messages_consumed += 1
         if num_messages_consumed >= num_messages:
+            print(num_messages_consumed)
             break
 
 def _consume_multi_threaded(brokers, topic, num_messages, num_consumers):
+
     threads = []
-    messages_per_consumer = num_messages // num_consumers
+    messages_per_consumer = num_messages
     for _ in range(num_consumers):
         consumer = KafkaConsumer(
             topic,
@@ -82,7 +87,7 @@ def _consume_multi_threaded(brokers, topic, num_messages, num_consumers):
             group_id=str(uuid.uuid1()),
             auto_offset_reset="earliest"
         )
-        thread = threading.Thread(target=_consume, args=(consumer, messages_per_consumer))
+        thread = threading.Thread(target=_consume, args=(brokers, topic, messages_per_consumer))
         threads.append(thread)
         thread.start()
 
@@ -91,13 +96,13 @@ def _consume_multi_threaded(brokers, topic, num_messages, num_consumers):
 
 
 
-def plot_message_count_vs_time(message_sizes, avg_times,users):
+def plot_message_count_vs_time(message_sizes, avg_times,users,client_type):
     filename= "message_count_nbusers"\
-             +str(users)+"vs_time"+".png"
+             +str(users)+ str(client_type) + "_vs_time"+".png"
 
     plt.figure(figsize=(10, 6))
     plt.plot(message_sizes, avg_times, marker='o')
-    plt.title('Average Time for Different Message Counts ' + "; Nombre de user = " + str(users))
+    plt.title('Average Time for Different Message Counts; ' + " Nombre de " + str(client_type) + " = " + str(users))
     plt.xlabel('Number of Messages')
     plt.ylabel('Average Time (seconds)')
     plt.grid(True)
