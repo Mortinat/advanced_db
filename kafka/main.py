@@ -15,7 +15,7 @@ from kafka import KafkaProducer, KafkaConsumer
 @click.option('--num_producers', default=1, type=click.INT, help='Number of producer threads to create.', required=False)
 
 def benchmark(client_type, brokers, topic, num_messages, msg_size, num_runs, num_producers):
-    payload = "x" * msg_size
+    payload = b"x" * msg_size
     avg_times = []
     message_counts = [10000,100000,1000000,10000000]
     for _ in message_counts:
