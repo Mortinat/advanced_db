@@ -22,8 +22,8 @@ def insert_data(size):
             timeout=1000,
         )
 
-def read_data(client):
-    events = client.read_all(timeout=1000)
+def read_data(client, position):
+    events = client.read_stream(stream_name='test-stream-1', stream_position=position)
     
 if __name__ == "__main__":
     dict_w_time = {}
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
                 thread_list = []
                 for i in range(num_thread):
-                    thread_list.append(threading.Thread(target=read_data, args=(client, )))
+                    thread_list.append(threading.Thread(target=read_data, args=(client, num_row-temp)))
                 start = time.time()
                 for thread in thread_list:
                     thread.start()
