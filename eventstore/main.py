@@ -9,12 +9,17 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 msg = b'a'*100
 NUM_ROWS = [1000, 10000, 100000, 1000000]
 NUM_THREADS = [1, 5, 10]
+# LIST_EVENTS = [NewEvent(type='OrderCreated', data=chr(65+(i%62)).encode()*100) for i in range(10000)]
+LIST_EVENTS = [NewEvent(type='OrderCreated', data=msg) for i in range(10000)]
 
 def insert_data(size):
     numb_of_loops = size // 10000
     for j in range(numb_of_loops+1):
-        list_events = [NewEvent(type='OrderCreated', data=msg)] * 10000
-
+        if size > 10000:
+            list_events = LIST_EVENTS
+            size -= 10000
+        else:
+            list_events = LIST_EVENTS[:size]
         commit_position1 = client.append_to_stream(
             stream_name=stream_name1,
             current_version=StreamState.ANY,
