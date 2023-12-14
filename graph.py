@@ -20,18 +20,18 @@ for num_row in NUM_ROWS:
     eventstore_list = []
     kafka_list = []
     for num_thread in NUM_THREADS:
-        psql_list.append(psql_write.get(f"{num_row}_{num_thread}", 0))
-        eventstore_list.append(eventstore_write.get(f"{num_row}_{num_thread}", 0))
-        # kafka_list.append(kafka_write.get(f"{num_row}_{num_thread}", 0))
+        psql_list.append(psql_read.get(f"{num_row}_{num_thread}", 0))
+        eventstore_list.append(eventstore_read.get(f"{num_row}_{num_thread}", 0))
+        kafka_list.append(kafka_read.get(f"{num_row}_{num_thread}", 0))
     rects = ax.bar(x + width * 0, psql_list, width, label=f"psql")
     ax.bar_label(rects, padding=3)
     rects = ax.bar(x + width * 1, eventstore_list, width, label=f"eventstore")
     ax.bar_label(rects, padding=3)
-    # rects = ax.bar(x + width * 2, kafka_list, width, label=f"kafka")
-    # ax.bar_label(rects, padding=3)
+    rects = ax.bar(x + width * 2, kafka_list, width, label=f"kafka")
+    ax.bar_label(rects, padding=3)
 
     ax.set_ylabel('time in seconds')
-    ax.set_title(f'Write time comparison for {num_row} rows by number of threads')
+    ax.set_title(f'Read time comparison for {num_row} rows by number of threads')
     ax.set_xticks(x + width, NUM_THREADS)
     ax.legend(loc='upper left', ncols=3)
-    plt.savefig(f'write_{num_row}.png')
+    plt.savefig(f'read_{num_row}.png')
